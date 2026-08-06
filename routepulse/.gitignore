@@ -11,9 +11,9 @@ build/
 # Environment
 .env
 
-# DuckDB
+# DuckDB — ignore local runtime file but commit the snapshot
 *.duckdb
-data/
+!data/routepulse.duckdb
 
 # Airflow
 airflow/logs/

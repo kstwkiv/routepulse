@@ -21,7 +21,12 @@ load_dotenv()
 
 log = logging.getLogger(__name__)
 
-DUCKDB_PATH   = os.getenv("DUCKDB_PATH", "/data/routepulse.duckdb")
+# Primary path from env (Docker), fallback to repo-relative snapshot for Streamlit Cloud
+_ENV_PATH = os.getenv("DUCKDB_PATH", "/data/routepulse.duckdb")
+_REPO_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "routepulse.duckdb")
+_REPO_PATH = os.path.normpath(_REPO_PATH)
+
+DUCKDB_PATH = _ENV_PATH if os.path.exists(_ENV_PATH) else _REPO_PATH
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
 POSTGRES_DB   = os.getenv("POSTGRES_DB", "routepulse")

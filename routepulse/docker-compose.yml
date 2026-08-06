@@ -41,6 +41,19 @@ x-airflow-common: &airflow-common
 
 services:
   # ─────────────────────────────────────────────────────────────────────────
+  # Volume permission initialiser — runs once before Airflow starts
+  # ─────────────────────────────────────────────────────────────────────────
+  data-init:
+    image: alpine:3.18
+    container_name: routepulse_data_init
+    command: sh -c "mkdir -p /data && chmod 777 /data && echo 'Data volume permissions set.'"
+    volumes:
+      - duckdb_data:/data
+    networks:
+      - routepulse_net
+    restart: "no"
+
+  # ─────────────────────────────────────────────────────────────────────────
   # PostgreSQL — raw orders storage
   # ─────────────────────────────────────────────────────────────────────────
   postgres:
@@ -87,6 +100,11 @@ services:
       _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: admin
       _AIRFLOW_WWW_USER_PASSWORD: admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      data-init:
+        condition: service_completed_successfully
     restart: "no"
 
   # ─────────────────────────────────────────────────────────────────────────
