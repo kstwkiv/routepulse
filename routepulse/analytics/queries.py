@@ -15,17 +15,30 @@ load_dotenv()
 
 log = logging.getLogger(__name__)
 
-DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/data/routepulse.duckdb")
+# Use the same smart path resolution as db.py
+def _resolve_duckdb_path() -> str:
+    candidates = [
+        os.getenv("DUCKDB_PATH", ""),
+        os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "data", "routepulse.duckdb")),
+        os.path.join(os.getcwd(), "data", "routepulse.duckdb"),
+        os.path.join(os.getcwd(), "routepulse", "data", "routepulse.duckdb"),
+        "/mount/src/routepulse/routepulse/data/routepulse.duckdb",
+    ]
+    for path in candidates:
+        if path and os.path.exists(path):
+            return path
+    return candidates[1]
 
 
 def _conn() -> duckdb.DuckDBPyConnection:
     """Open a read-only DuckDB connection."""
-    if not os.path.exists(DUCKDB_PATH):
+    path = _resolve_duckdb_path()
+    if not os.path.exists(path):
         raise FileNotFoundError(
-            f"DuckDB database not found at {DUCKDB_PATH}. "
+            f"DuckDB database not found at {path}. "
             "Has the ETL pipeline run at least once?"
         )
-    return duckdb.connect(DUCKDB_PATH, read_only=True)
+    return duckdb.connect(path, read_only=True)
 
 
 def _safe_query(sql: str, params=None) -> pd.DataFrame:
