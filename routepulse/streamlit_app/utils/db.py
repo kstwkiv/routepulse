@@ -9,8 +9,13 @@ import logging
 
 import duckdb
 import pandas as pd
-import psycopg2
 from dotenv import load_dotenv
+
+try:
+    import psycopg2
+    _PSYCOPG2_AVAILABLE = True
+except ImportError:
+    _PSYCOPG2_AVAILABLE = False
 
 load_dotenv()
 
@@ -50,6 +55,8 @@ def check_postgres() -> tuple:
     Check PostgreSQL connectivity.
     Returns (is_connected: bool, message: str).
     """
+    if not _PSYCOPG2_AVAILABLE:
+        return False, "psycopg2 not installed"
     try:
         conn = psycopg2.connect(
             host=POSTGRES_HOST, port=POSTGRES_PORT,
