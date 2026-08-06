@@ -21,12 +21,29 @@ load_dotenv()
 
 log = logging.getLogger(__name__)
 
-# Primary path from env (Docker), fallback to repo-relative snapshot for Streamlit Cloud
-_ENV_PATH = os.getenv("DUCKDB_PATH", "/data/routepulse.duckdb")
-_REPO_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "routepulse.duckdb")
-_REPO_PATH = os.path.normpath(_REPO_PATH)
+def _resolve_duckdb_path() -> str:
+    """
+    Resolve DuckDB file path. Tries locations in priority order:
+    1. DUCKDB_PATH env var (Docker / local)
+    2. Relative to this file (../../data/routepulse.duckdb)
+    3. Relative to cwd (data/routepulse.duckdb)
+    4. Absolute fallback used by Streamlit Cloud mount path
+    """
+    candidates = [
+        os.getenv("DUCKDB_PATH", ""),
+        os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "routepulse.duckdb")),
+        os.path.join(os.getcwd(), "data", "routepulse.duckdb"),
+        os.path.join(os.getcwd(), "routepulse", "data", "routepulse.duckdb"),
+        "/mount/src/routepulse/routepulse/data/routepulse.duckdb",
+    ]
+    for path in candidates:
+        if path and os.path.exists(path):
+            log.info("DuckDB found at: %s", path)
+            return path
+    # Return the env/default even if not found — error will surface clearly
+    return candidates[1]
 
-DUCKDB_PATH = _ENV_PATH if os.path.exists(_ENV_PATH) else _REPO_PATH
+DUCKDB_PATH = _resolve_duckdb_path()
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
 POSTGRES_DB   = os.getenv("POSTGRES_DB", "routepulse")
@@ -36,6 +53,8 @@ POSTGRES_PASS = os.getenv("POSTGRES_PASSWORD", "routepulse123")
 
 def duckdb_exists() -> bool:
     """Return True if the DuckDB file is present on disk."""
+    global DUCKDB_PATH
+    DUCKDB_PATH = _resolve_duckdb_path()
     return os.path.exists(DUCKDB_PATH)
 
 
