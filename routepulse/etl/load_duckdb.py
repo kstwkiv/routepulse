@@ -187,8 +187,9 @@ def record_pipeline_run(
     error_message: str = None,
 ):
     """Persist a pipeline run record."""
+    conn.execute("DELETE FROM pipeline_runs WHERE run_id = ?;", [run_id])
     conn.execute("""
-        INSERT OR REPLACE INTO pipeline_runs
+        INSERT INTO pipeline_runs
             (run_id, dag_id, run_type, started_at, finished_at, status,
              records_processed, records_failed, processing_time_sec, error_message)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
