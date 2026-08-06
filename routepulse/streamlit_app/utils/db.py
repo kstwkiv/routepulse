@@ -38,13 +38,27 @@ def _resolve_duckdb_path() -> str:
     ]
     for path in candidates:
         if path and os.path.exists(path):
-            log.info("DuckDB found at: %s", path)
             return path
-    # Return the env/default even if not found — error will surface clearly
+    # Return the relative path as default even if not found
     return candidates[1]
 
-DUCKDB_PATH = _resolve_duckdb_path()
+DUCKDB_PATH   = _resolve_duckdb_path()
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
+POSTGRES_DB   = os.getenv("POSTGRES_DB", "routepulse")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "routepulse")
+POSTGRES_PASS = os.getenv("POSTGRES_PASSWORD", "routepulse123")
+
+
+def duckdb_exists() -> bool:
+    """Return True if the DuckDB file is present on disk."""
+    # Re-resolve each time in case the file appears after startup
+    return os.path.exists(_resolve_duckdb_path())
+
+
+def get_duckdb_path() -> str:
+    """Return the resolved DuckDB path."""
+    return _resolve_duckdb_path()
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
 POSTGRES_DB   = os.getenv("POSTGRES_DB", "routepulse")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "routepulse")
@@ -63,10 +77,11 @@ def check_duckdb() -> tuple:
     Check DuckDB connectivity.
     Returns (is_connected: bool, message: str).
     """
-    if not duckdb_exists():
-        return False, f"File not found: {DUCKDB_PATH}"
+    path = get_duckdb_path()
+    if not os.path.exists(path):
+        return False, f"File not found: {path}"
     try:
-        conn = duckdb.connect(DUCKDB_PATH, read_only=True)
+        conn = duckdb.connect(path, read_only=True)
         conn.execute("SELECT 1;")
         conn.close()
         return True, "Connected"
@@ -98,12 +113,13 @@ def run_duckdb_query(sql: str, params=None) -> pd.DataFrame:
     Execute a SQL query against DuckDB and return a DataFrame.
     Raises FileNotFoundError if DuckDB doesn't exist yet.
     """
-    if not duckdb_exists():
+    path = get_duckdb_path()
+    if not os.path.exists(path):
         raise FileNotFoundError(
-            f"DuckDB database not found at {DUCKDB_PATH}. "
+            f"DuckDB database not found at {path}. "
             "The ETL pipeline has not run yet."
         )
-    conn = duckdb.connect(DUCKDB_PATH, read_only=True)
+    conn = duckdb.connect(path, read_only=True)
     try:
         if params:
             return conn.execute(sql, params).df()

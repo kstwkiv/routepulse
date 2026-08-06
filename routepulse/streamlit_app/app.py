@@ -13,6 +13,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from streamlit_app.utils.styles import inject_global_css, COLOR_PRIMARY, COLOR_ON_TIME, COLOR_DELAYED
+from streamlit_app.utils.db import get_duckdb_path, duckdb_exists
 
 st.set_page_config(
     page_title="RoutePulse",
@@ -145,3 +146,22 @@ st.markdown(
     f'Next auto-refresh in {remaining // 60}m {remaining % 60}s</div>',
     unsafe_allow_html=True,
 )
+
+# ---------------------------------------------------------------------------
+# Debug info (helps diagnose path issues on Streamlit Cloud)
+# ---------------------------------------------------------------------------
+with st.expander("🔍 Debug Info", expanded=False):
+    import glob
+    resolved = get_duckdb_path()
+    exists = duckdb_exists()
+    st.code(f"""
+cwd:          {os.getcwd()}
+__file__:     {os.path.abspath(__file__)}
+resolved db:  {resolved}
+db exists:    {exists}
+DUCKDB_PATH env: {os.getenv('DUCKDB_PATH', '(not set)')}
+
+data/ contents:
+{chr(10).join(glob.glob(os.path.join(os.getcwd(), '**', '*.duckdb'), recursive=True)) or '(none found)'}
+    """)
+
