@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+dist/
+build/
+
+# Environment
+.env
+
+# DuckDB
+*.duckdb
+data/
+
+# Airflow
+airflow/logs/
+airflow/plugins/__pycache__/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Docker
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
